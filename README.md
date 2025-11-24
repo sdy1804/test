@@ -165,30 +165,41 @@ flowchart LR
 ```mermaid
 stateDiagram-v2
     [*] --> NoNozzle: 차량 감지
-    NoNozzle --> NozzleAttached: nozzle_car 감지<br/>차량 bbox 내부
-    NozzleAttached --> FuelingStarted: nozzle_on 감지<br/>(nozzle_car가 있는 차량)
-    FuelingStarted --> [*]: 차량 이탈
+    NoNozzle --> FuelingStarted: nozzle_car 감지<br/>차량 bbox 내부<br/>(주유 시작)
+    FuelingStarted --> FuelingEnded: nozzle_on 감지<br/>(노즐 POS기 반납)
+    FuelingEnded --> [*]: 차량 이탈
     
-    note right of NozzleAttached
+    note right of FuelingStarted
         기록: start 시간
+        의미: 주유 시작
         형식: YYYY-MM-DD HH:MM:SS
     end note
     
-    note right of FuelingStarted
+    note right of FuelingEnded
         기록: end 시간
+        의미: 주유 완료 후 노즐 반납
         형식: HH:MM:SS
     end note
 ```
 
 **로직**:
-1. **nozzle_car**: 노즐이 차량에 물리적으로 부착됨
+1. **nozzle_car**: 노즐이 차량에 부착됨 → **주유 시작**
    - nozzle_car 중심점이 차량 bbox 내부에 있을 때 감지
-   - 최초 감지 시 타임스탬프 기록
+   - 최초 감지 시 타임스탬프 기록 (start 시간)
    - 일시적으로 감지되지 않아도 상태 유지
+   - **의미**: 운전자가 차량에 노즐을 꽂고 주유를 시작함
 
-2. **nozzle_on**: 연료 분사 시작
+2. **nozzle_on**: 주유 완료 후 노즐을 POS기에 반납 → **주유 종료**
    - 최소 한 대의 차량이 nozzle_car를 가지고 있을 때만 확인
-   - nozzle_car는 있지만 nozzle_on이 없는 차량에 대해 타임스탬프 기록
+   - nozzle_car는 있지만 nozzle_on이 없는 차량에 대해 타임스탬프 기록 (end 시간)
+   - **의미**: 주유 완료 후 운전자가 노즐을 POS기 거치대에 반납함
+
+**타임라인 예시**:
+```
+10:30:15 - nozzle_car 감지 (start) → 주유 시작
+10:30:45 - nozzle_on 감지 (end)   → 주유 완료, 노즐 반납
+총 주유 시간: 30초
+```
 
 ---
 
